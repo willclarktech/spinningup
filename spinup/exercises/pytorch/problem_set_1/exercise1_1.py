@@ -1,17 +1,35 @@
 import torch
 import numpy as np
 
+
+def get_sum_part(x, mu, log_std):
+    top = (x - mu) ** 2
+    bottom = np.exp(log_std) ** 2
+    side = 2 * log_std
+    return (top / bottom) + side
+
+
+def get_one_likelihood(x, mu, log_std, dim):
+    part = [get_sum_part(x[i], mu[i], log_std[i]) for i in range(dim)]
+    return -0.5 * (np.array(part).sum() + (dim * np.log(2 * np.pi)))
+
+
+def has_batch(log_std):
+    return len(log_std.shape) != 1
+
+
 """
 
 Exercise 1.1: Diagonal Gaussian Likelihood
 
-Write a function that takes in PyTorch Tensors for the means and 
-log stds of a batch of diagonal Gaussian distributions, along with a 
-PyTorch Tensor for (previously-generated) samples from those 
-distributions, and returns a Tensor containing the log 
+Write a function that takes in PyTorch Tensors for the means and
+log stds of a batch of diagonal Gaussian distributions, along with a
+PyTorch Tensor for (previously-generated) samples from those
+distributions, and returns a Tensor containing the log
 likelihoods of those samples.
 
 """
+
 
 def gaussian_likelihood(x, mu, log_std):
     """
@@ -23,12 +41,11 @@ def gaussian_likelihood(x, mu, log_std):
     Returns:
         Tensor with shape [batch]
     """
-    #######################
-    #                     #
-    #   YOUR CODE HERE    #
-    #                     #
-    #######################
-    return torch.zeros(1)
+    batch, dim = x.shape
+    output = [get_one_likelihood(
+        x[i], mu[i], log_std[i] if has_batch(log_std) else log_std, dim
+    ) for i in range(batch)]
+    return torch.tensor(output)
 
 
 if __name__ == '__main__':
@@ -46,7 +63,8 @@ if __name__ == '__main__':
     log_std = torch.rand(dim)
 
     your_gaussian_likelihood = gaussian_likelihood(x, mu, log_std)
-    true_gaussian_likelihood = exercise1_1_soln.gaussian_likelihood(x, mu, log_std)
+    true_gaussian_likelihood = exercise1_1_soln.gaussian_likelihood(
+        x, mu, log_std)
 
     your_result = your_gaussian_likelihood.detach().numpy()
     true_result = true_gaussian_likelihood.detach().numpy()
