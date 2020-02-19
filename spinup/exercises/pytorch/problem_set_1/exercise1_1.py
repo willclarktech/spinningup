@@ -41,11 +41,9 @@ def gaussian_likelihood(x, mu, log_std):
     Returns:
         Tensor with shape [batch]
     """
-    batch, dim = x.shape
-    output = [get_one_likelihood(
-        x[i], mu[i], log_std[i] if has_batch(log_std) else log_std, dim
-    ) for i in range(batch)]
-    return torch.tensor(output)
+    k = x.shape[-1]
+    std = np.exp(log_std)
+    return -0.5 * ((((x - mu)**2 / std**2) + 2 * log_std).sum(dim=-1) + (k * np.log(2 * np.pi)))
 
 
 if __name__ == '__main__':
