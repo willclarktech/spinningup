@@ -21,6 +21,7 @@ You do NOT need to write code for this exercise.
 Bugged Actor-Critic
 """
 
+
 class BuggedMLPActor(nn.Module):
 
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation, act_limit):
@@ -33,18 +34,21 @@ class BuggedMLPActor(nn.Module):
         # Return output from network scaled to action space limits.
         return self.act_limit * self.pi(obs)
 
+
 class BuggedMLPQFunction(nn.Module):
 
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
-        self.q = mlp([obs_dim + act_dim] + list(hidden_sizes) + [1], activation)
+        self.q = mlp([obs_dim + act_dim] +
+                     list(hidden_sizes) + [1], activation)
 
     def forward(self, obs, act):
-        return self.q(torch.cat([obs, act], dim=-1))
+        return self.q(torch.cat([obs, act], dim=-1)).flatten()
+
 
 class BuggedMLPActorCritic(nn.Module):
 
-    def __init__(self, observation_space, action_space, hidden_sizes=(256,256),
+    def __init__(self, observation_space, action_space, hidden_sizes=(256, 256),
                  activation=nn.ReLU):
         super().__init__()
 
@@ -53,7 +57,8 @@ class BuggedMLPActorCritic(nn.Module):
         act_limit = action_space.high[0]
 
         # build policy and value functions
-        self.pi = BuggedMLPActor(obs_dim, act_dim, hidden_sizes, activation, act_limit)
+        self.pi = BuggedMLPActor(
+            obs_dim, act_dim, hidden_sizes, activation, act_limit)
         self.q = BuggedMLPQFunction(obs_dim, act_dim, hidden_sizes, activation)
 
     def act(self, obs):
@@ -75,7 +80,7 @@ if __name__ == '__main__':
     def ddpg_with_actor_critic(bugged, **kwargs):
         from spinup.exercises.pytorch.problem_set_2.exercise2_2 import BuggedMLPActorCritic
         actor_critic = BuggedMLPActorCritic if bugged else MLPActorCritic
-        return ddpg(actor_critic=actor_critic, 
+        return ddpg(actor_critic=actor_critic,
                     ac_kwargs=dict(hidden_sizes=[args.h]*args.l),
                     start_steps=5000,
                     max_ep_len=150,
