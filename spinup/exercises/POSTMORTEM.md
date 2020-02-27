@@ -2,7 +2,7 @@
 
 Exercises from https://spinningup.openai.com/en/latest/spinningup/exercises.html
 
-Completed using `pytorch`.
+Completed using pytorch.
 
 ## Problem Set 1: Basics of Implementation
 
@@ -27,4 +27,27 @@ Completed using `pytorch`.
 
 ### Exercise 2.1: Value Function Fitting in TRPO
 
+n/a
+
 ### Exercise 2.2: Silent Bug in DDPG
+
+There was a big clue in the doc string for the `ddpg` function, describing the output of the `q` module of the `actor_critic` argument:
+
+> Tensor containing the current estimate of Q\* for the provided observations and actions. (Critical: make sure to flatten this!)
+
+Checking the shape of the Q function's output confirmed it had rank 2, not rank 1, so I added a `.flatten()` and the bug was fixed. Checking against the provided implementation, they use `torch.squeeze(q, -1)` instead of `flatten`, which is equivalent in this case.
+
+As the solution page explains,
+
+> The line that produces the Bellman backup was written with the assumption that it would add together tensors with the same shape. However, this line can also add together tensors with different shapes, as long as they’re broadcast-compatible.
+
+From pytorch's docs on broadcasting:
+
+> If two tensors x, y are “broadcastable”, the resulting tensor size is calculated as follows:
+>
+> -   If the number of dimensions of x and y are not equal, prepend 1 to the dimensions of the tensor with fewer dimensions to make them equal length.
+> -   Then, for each dimension size, the resulting dimension size is the max of the sizes of x and y along that dimension.
+
+So when the experiment is run with a batch size of 64, and the output of the buggy Q function is multiplied by the `d` mask, we have a tensor of shape `(64, 1)` multiplied by a tensor of shape `(64,)`, which is prepended with ones to become `(1, 64)` due to broadcasting, resulting in a tensor with shape `(64, 64)`, which results in further broadcasting errors. With the correct code we multiply two tensors of shape `(64,)`, resulting in another tensor of shape `(64,)`.
+
+I'm left wondering why people don't pepper their code with assertions against the shape of tensors everywhere, at least in development. I'm also even more scared than I was before of numpy/broadcasting magic.
